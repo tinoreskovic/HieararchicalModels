@@ -1,0 +1,141 @@
+---
+title: "Hw16"
+author: "Jade, Tin"
+date: "3/20/2018"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+library("arm")
+require(foreign)
+options(mc.cores = parallel::detectCores())
+#loading dataset with variabel rvote and dvote
+#load("~/Documents/Columbia Uni/Adv methods /hw16/nes.rda")
+load("~/Desktop/nes.rda")
+#removing nas and isolating year 1992
+ok <- nes$year==1992 & !is.na(nes$rvote) & !is.na(nes$dvote) & (nes$rvote==1 | nes$dvote==1)
+nes92 <- nes[ok,]
+
+#loading cleaned dataset with broken down features
+nes2 <- read.dta("http://www.stat.columbia.edu/~gelman/arm/examples/nes/nes5200_processed_voters_realideo.dta")
+#isolating year 1992
+y1992 = nes2$year == 1992
+nes2 = nes2[y1992,]
+
+# merge two data frames by resid
+nes_total <- merge(nes92,nes2, by="resid")
+```
+Now that we've processed the datasets, we can start fitting the logistic regression models.
+Combining $textbf{1(a)}$ and $\textbf{(b):}$ Fitting various models and evaluating them.
+
+Model 1
+```{r}
+# logistic regression of vote preference on income
+fit_1 = glm(rvote ~ income.y, family=binomial(link="logit"), data=nes_total)
+display(fit_1)
+```
+Evaluation:
+This first model predicts how different, on average, the probability probability of voting republican depending on the income of the repondent as broken down by category of income. As expected, as one's income bracket goes in the percentile (as one is richer), one is more likely to vote republican. The increasing coefficent estimates validate this. It's interesting to notice that the s.e. $\hat{\sigma}$ for these coefficients stay in the range of $.23-.31$, as the coef.est continue to rise per increasing percentile. One could interpret this as the richer a person is, the more confident this model is in predicting their probability of voting republican. This interpretation is based on the divide-by-4 rule, which approximately upper-bounds the predictive differnce corresponding to a unit increase in $x$, which holds beacuse the slope of the curve is maximized at the center of the curve.
+
+Model 2
+```{r}
+fit_2 = glm(rvote ~ income.x + gender.x + race.x + educ1.x + partyid3.x + ideo.x, family=binomial(link="logit"), data=nes_total)
+display(fit_2)
+```
+Evaluation: 
+This model combines all the features as instructed, but doesn't break them down in their catergories. It is hard to interpret this model because it is unclear how these features are broken down, although one can notice the relatively higher coefficient of partyid3 and ideo, corresponding to a larger (approximately upper bounded) predicted difference in the republican vote probability for a unit increase in these variables. The following model digs deeper.
+
+Model 3
+```{r}
+fit_3 = glm(rvote ~ income.y + gender.y + race.y + educ1.y + partyid3.y + ideo.y, family=binomial(link="logit"), data=nes_total)
+display(fit_3)
+```
+This model combines all the features as indicated in the instructions, broken down into their own categories. As a sanity check, one can look at the partyid3.y3 (people identifying as republicans). As expected, it has the strongest reliablity in this particular model, with a coef.est of 4.09 and a coef.se of only 0.24. Similarly, self-identified conversatives (ideo.y5.) have a high positive association with voting repbulican, with a small coef.se of 0.24.
+In addition, one notices something potentially interesting: the coef.est for the highest income percentile went negative in this model: -0.33, whereas it was the highest in the previous(1.24). Due to the high number of features (controls) in this model, it is hard to exactly interpret this change. One should notice that this coef.est has a coef.se higher than its value (-0.33 versus 0.56) - this reflects the large uncertainty tied to the estimate, which suggests that the data are quite consistent with a true coefficient in both directions (positive and negative).
+
+Model 4
+```{r}
+fit_4 = glm(rvote ~ income.x + female.x + black.x + educ1.x + partyid3.x + ideo.x + black.x:female.x, family=binomial(link="logit"), data=nes_total)
+display(fit_4)
+```
+Evaluation:
+Including variables expressing a binary of being female, black, having the same level of education, partyID and ideology, income has a slightly negative coefficient: -0.08. However,it is worth noting that the s.e. for income is 0.10, even higher than the coefficient estimate itself. It is therefore not reliable, and, as in the case of the above-discussed highest quantile, the data are quite consistent even with both signs of the true coefficient, thus not allowing any confident inference. Expectedly, there is a large negative coefficient on the interaction between being black and being female, though again here the $\hat{\sigma}$ is high compared to the size of the estimated coefficient, which comes with all the above caveats.
+
+
+Model 5
+```{r}
+fit_5 = glm(rvote ~ income.x + female.x + white.x + educ1.x + partyid3.x + ideo.x + white.x:female.x, family=binomial(link="logit"), data=nes_total)
+display(fit_5)
+```
+Evaluation: 
+The coefficient of the interaction between being white and female is slightly smaller than that discussed above, between black and female.
+This is expected. The coef.se is smaller in this case, making this coefficient estimate more reliable, albeit not so much that it would allow for very condifent inference, since it's size is still considerable.
+
+$\textbf{1(c)}$
+
+In model 5, the coefficient on the original variable of interest, income.x is realtively small and uncertain due to it's comparatively very large estimated s.e. of 0.10, so it's role in the prediction is small, compared to especially, perhaps expectedly, partyid3.x, ideo.x, both of which are large and estimated with relatively little uncertainty. That its importance somewhat fades away with the inclusion of other predictors has been observed above. The impact of each of female.x, white.x, and the interaction of female.x and white.x in predictions is smaller, due to their higher estimated standard errors. Finally, the remaining, income.x and education.x both contribute less to the prediction, due to their magnitude and comparatively high standard errors.
+
+
+$\textbf{2: (a) (b) (c) (d)}:$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+$\textit{Shadow topic:}$
+the four plots below show the residual plots for models 5 and 3, with quite a few of the points, especially for model 3, falling outside the 95% confidence bands. This also shows that it's a little harder to interperet regular residual plots for logistic regressions.
+```{r}
+residuals = resid(fit_5)
+
+fitted = fitted(fit_5)
+residual.plot(fitted, residuals, sigma(fit_5))
+
+binnedplot(fitted(fit_5), resid(fit_5))
+
+
+residual.plot(fitted(fit_3), resid(fit_3), sigma(fit_3))
+
+binnedplot(fitted(fit_3), resid(fit_3))
+```
+
+

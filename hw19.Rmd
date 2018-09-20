@@ -1,0 +1,53 @@
+---
+title: "hw19"
+author: "Tin, Jade"
+date: "4/2/2018"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$\textbf{18.3.}$
+
+Where the outcome variable is the gain score:
+
+
+$$y_i - x_i = \alpha + \theta z_i +\beta x_i + \epsilon_i$$
+
+so: $$\qquad y_i = \alpha + x_i + \theta z_i +\beta x_i + \epsilon_i$$
+
+And the only difference between the gain score model and the original model with the post-tretment measure as the outcome variable:
+
+$$y_i = \alpha + \theta z_i +\beta x_i + \epsilon_i $$
+
+is that the estimated constant term will be different, so the $\hat{\theta}$ will not be different.
+
+An even simpler explanation is that adding a constant term to a function only shifts its graph vertically by the value of the term.
+
+
+$\textbf{18.4.}$
+
+$\textbf{(a)}$
+
+$\textbf{(b)}$
+
+
+$\textbf{(c)}$
+
+
+$\textbf{18.5.}$
+
+$\textbf{(a)}$
+
+$\textbf{(b)}$
+
+
+
+
+$\textit{Shadow topic:}$
+

@@ -1,0 +1,53 @@
+---
+title: "Hw11"
+author: "Tin Oreskovic, Jade Le-Cascarino"
+date: "2/21/2018"
+output:
+  word_document: default
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("stargazer")
+library(arm)
+```
+
+$\textbf{Part (a)}$
+
+```{r}
+var1 <- rnorm(1000,0,1)
+var2 <- rnorm(1000,0,1)
+fake <- data.frame(var1, var2)
+fit <- lm (var2 ~ var1, data=fake)
+display(fit)
+```
+The coefficient for var1 is not statistically significant $(0.01/0.03 < 2)$  
+
+$\textbf{Part (b & c)}$
+```{r}
+library(ggplot2)
+z.scores <- rep (NA, 100) 
+for (k in 1:100) {
+  var3 <- rnorm (1000,0,1)
+  var4 <- rnorm (1000,0,1)
+  fake <- data.frame(var3, var4)
+  fit1 <- lm (var3 ~ var4)
+  z.scores[k] <- coef(fit1)[2]/se.coef(fit1)[2]
+}
+
+sum(z.scores > 2)
+```
+This is the number of times the coeficcient turns out to be statistically significant (out of a hundred simulations).
+
+$\textit{Shadow topic:}$
+
+Maybe this is an observation that should be obvious given the assignment, or perhaps it's misreading its purpose, but I wonder whether it is useful to attempt simulating variables with distributions similar to those of the the actual data used in research. Since this is not supposed to be just a question, I'll share my strong intuition that it does add an opportunity to inspect the reliabiltiy of a finding, in a sense similar to how exploring the featuers of the data graphically might: an outlier specific to these data might be 'responsible' for the statistical significance, while out of many very similar simulated tests, only a few will indicate statistical significance; alternatively, a non-linear model might better resemble the real relation in the data, despite finding statistically significant relations with a linear model, etc. Such simulations might also be useful, though more challenging to perform, where the simpler graphical methods fail: for instance, when the models feature multiple variables of several types, as it's often the case (nota bene to myself: here the partial regression plots which I've made in the last homework can be useful). The simulations also give a more tangible indication of how we should understand the original findings, since they produce a simple fraction, and I'm sure there are other advantages that I'm not remembering now.
+
+
+
+
+
+

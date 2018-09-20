@@ -1,0 +1,147 @@
+---
+title: "hw12"
+author: "Tin Oreskovic, Jade Le-Cascarino"
+date: "2/28/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+$\textbf{9.4. (a)}$
+
+```{r}
+beauty.data <- read.csv("~/Desktop/ProfEvaltnsBeautyPublic.csv")
+```
+
+
+```{r}
+library(arm)
+colnames(beauty.data)
+
+# Fit a linear regression
+lm.1 <- lm (courseevaluation ~ btystdave, data = beauty.data)
+display (lm.1)
+
+lm.2 <- lm (courseevaluation ~ btystdave + female, data = beauty.data)
+display (lm.2)
+
+lm.3 <- lm (courseevaluation ~ btystdave + female + age, data = beauty.data)
+display (lm.3)
+```
+For lm.3, the intercept is at $4.23$. At the baseline, a male, of age $0$, with a beauty score of $0$, would have a course evaluation score of $4.23$. This doens't mean much in practice because no person would have a score at the age of 0. The btystdave coefficient implies that keeping gender and age constant, an observation with a one unit higher beauty score is predicted to have a course evaluation higher by $0.14$, on average. Likewise, keeping other predictors constant, on average, females gave course evaluation scores lower by $-0.21$. On the other hand, the coefficient on age is $0$, implying that with the other predictors constant, the model predicts people of various ages to produce the same course evaluations.
+
+The $\hat{\sigma}= 0.54$, i.e. the residual standard deviation, is in turn a measure of the average distance each observation falls from its prediction from the model ???lm.3??? - it tells us that the average distance each observation $y_i$ falls from the value predicted by the model, $\hat{y_i}$, is 0.54.
+
+
+
+
+Displaying the estimated model grpahically following the method of section 9.5 for a model with mulitple predictors (bar the bayesian simulations), with two slopes for each value of the $\textit{female}$ variable, and the remaining independent variable ($\textit{age}$) held at their average value:
+```{r}
+library(ggplot2)
+alpha <- coef(lm.3)[1]
+beta1 <- coef(lm.3)[2]
+beta2 <- coef(lm.3)[3]
+beta3 <- coef(lm.3)[4]
+
+beaut_m <- mean(beauty.data$btystdave) 
+fem_m <- mean(beauty.data$female) 
+age_m <- mean(beauty.data$age) 
+
+alpha + beta3*age_m + beta2
+
+alpha + beta3*age_m
+
+print(alpha)
+print(beta1)
+print(beta2)
+
+
+ggplot(beauty.data, aes(x=beauty.data$btystdave, y=beauty.data$courseevaluation)) + geom_point() + theme_light() + geom_abline(intercept = 4.099417, slope = 0.14, color="black") + geom_abline(intercept = 3.888626, slope = 0.14, color="red") + xlab("beauty") + ylab("course evaluation") 
+```
+The red line above indicates the slope when $\textit{female} = 1$.
+
+
+
+
+The dotted lines show the $\pm 1$ standard-deviation bounds in the residual plot: 
+
+```{r}
+beauty.data$res <- residuals(lm.3)
+beauty.data$y_hat <- fitted(lm.3)
+beauty.data$sigma <- sigma.hat(lm.3)
+
+residual.plot(beauty.data$y_hat, beauty.data$res, beauty.data$sigma)
+
+
+ggplot(beauty.data, aes(x=beauty.data$y_hat, y=beauty.data$res)) + geom_point() + theme_light() + xlab("fitted value") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+```
+
+
+
+$\textbf{9.4. (b)}$
+
+```{r}
+lm.4 <- lm (courseevaluation ~ female + minority + female*minority, data = beauty.data)
+display (lm.4)
+```
+
+
+The above model has 3 predictors: female (indicating whether male or female), minority (whether or not person is a minority), and female * minority (being a female minority).
+This model displays the interaction between female and minority. The third beta, associated with the interaction, is the additional comparison captured when the person is both female and a minority. According to the model, on average, comparing people who are not of minority status, the model predicts females to have course evaluation grades lower by $-0.13$. Comparing males, the model predicts that those of minority status will have a course evaluation higher by $0.03$, on averge. The interaction coefficient caputures the fact that the model predicts females of minority status to have $-0.23 + 0.03 = - 0.20$ higher course evaluations than non-minority females, on average. The intercept implies that, on average, the model predicts a male, non-minority person would have a course evalution of $4.07$. 
+
+```{r}
+lm.5 <- lm (courseevaluation ~ btystdave + female + nonenglish, data = beauty.data)
+display (lm.5)
+```
+This model has three predictors: btystdave(beauty score), female (being female or not), and nonenglish (whether or not the person is English speaking). At the baseline, the model predicts that a male, english-speaking, with an average beauty score of $0$ (because beauty score scales from $-2$ to $2$), would score $4.11$ on the course evaluation. Controlling for gender and english-language, in other words, given they were of the same gender and english language skills, the model predicts that on average the person has a $0.15$ higher courseevaluation than if beauty score were lower by one unit. Similarly, the model predicts that a female person of the same beauty and english speaking skills would on average score $-0.20$ lower than their male counterpart. And third, comparing two people of the same beauty and gender, the model predicts that the non-english speaking person would score $-0.33$ points lower than one speaking English, on average. 
+
+```{r}
+lm.6 <- lm (courseevaluation ~ btystdave + female + btystdave*female, data = beauty.data)
+display (lm.6)
+```
+This model has 3 predictors: btystdave(beauty), female (whether female or not), and 
+beauty*female. As with the above explanation, the intercept implies that keeping everything else at $0$, the model predicts, on average, that a male of beauty score $0$ would have a score of $4.10$ on course evaluation. Comparing men, the model predicts that one with a one unit higher beauty score will have on average an evaluation score higher by $0.20$. By itself, the female coefficient of $-0.21$ tells us that the model predicts a women of a 0 beauty score to score that much lower on the course evaluation than her 0-beauty-scoring male counterpart, on average.  The interaction coefficient between between female and beauty tells us that for the model predicts, on average, that a female would only score $0.20 - 0.11 = 0.09$ higher on the coursevaluation than a female of one less beauty-unit score. 
+
+\textit{Shadow topic:} 
+Making a plot akin to those in the text for ml.6, which has an interaction term.
+
+
+
+```{r}
+library(ggplot2)
+alpha_1 <- coef(lm.6)[1]
+beta_1 <- coef(lm.6)[2]
+beta_2 <- coef(lm.6)[3]
+beta_3 <- coef(lm.6)[4]
+
+beaut_m <- mean(beauty.data$btystdave) 
+fem_m <- mean(beauty.data$female) 
+age_m <- mean(beauty.data$age) 
+
+print(alpha_1 + beta_2)
+
+print(alpha_1)
+
+
+print(beta_1)
+
+print(beta_3)
+
+
+
+ggplot(beauty.data, aes(x=beauty.data$btystdave, y=beauty.data$courseevaluation)) + geom_point() + theme_light() + geom_abline(intercept = 4.103644, slope = 0.20, color="black") + geom_abline(intercept = 3.898593, slope = 0.09, color="red") + xlab("beauty") + ylab("course evaluation") + geom_point(aes(shape = factor(female)), size = 3)
+
+```
+
+
+
+
+
+
+
+

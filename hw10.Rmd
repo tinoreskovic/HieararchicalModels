@@ -1,0 +1,143 @@
+---
+title: "Hw10"
+author: "Tin Oreskovic, Jade Le-Cascarino"
+date: "2/20/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(arm)
+pyth <- read.csv("~/Desktop/pyth.dat", sep="")
+```
+
+$\textbf{Part (a)}$
+
+```{r}
+pyth1 <- pyth[0:40, ]
+pyth2 <- pyth[-1:-40, ]
+```
+
+
+```{r}
+reg1 <- lm(y ~ x1 + x2, pyth1)
+display(reg1)
+```
+
+$\textbf{Part (b)}$
+
+Displaying the estimated model grpahically following the method of section 9.5 for a model with mulitple predictors (bar the bayesian simulations), with a plot for each input variable, with the other held at its average value. 
+```{r}
+library(ggplot2)
+alpha <- coef(reg1)[1]
+beta1 <- coef(reg1)[2]
+beta2 <- coef(reg1)[3]
+x1m <- mean(pyth1$x1) 
+x2m <- mean(pyth1$x2) 
+alpha + beta2*x2m
+alpha + beta1*x1m
+print(beta1)
+print(beta2)
+print(alpha)
+  
+ggplot(pyth1, aes(x=pyth1$x1, y=pyth1$y)) + geom_point() + theme_light() + geom_abline(intercept = 10.82186, slope = 0.5148104, color="red") + xlab("x1") + ylab("y")
+
+ggplot(pyth1, aes(x=pyth1$x2, y=pyth1$y)) + geom_point() + theme_light() + geom_abline(intercept = 4.083528, slope = 0.8069195, color="red") + xlab("x2") + ylab("y")
+```
+
+$\textit{Shadow topic:}$
+Partial regression plots are obtained by computing $\textbf{(i)}$ the residuals of regressing the dependent variable against the independent variables but omitting the independent variable of interest, $\textbf{(ii)}$ the residuals from regressing the independent variable of interest against the remaining independent variables, and $\textbf{(iii)}$ plotting the residuals from step (i) against the residuals from (ii). The benefit of this plot is that the least squares linear fit has the slope $\beta_{i}$ (of the variable of interest in the original model) and intercept zero, analogous in the slope of the plotted curve to the case of a simple plot of the independent variable against a dependent variable when the linear regression is one with a single predictor.
+
+```{r}
+#install.packages("ggplot2")
+library(ggplot2)
+reg2 <- lm(y ~ x2, pyth1)
+reg3 <- lm(y ~ x1, pyth1)
+reg4 <- lm(x1 ~ x2, pyth1)
+reg5 <- lm(x2 ~ x1, pyth1)
+
+pyth1$resid2 <- residuals(reg2)
+pyth1$resid3 <- residuals(reg3)
+pyth1$resid4 <- residuals(reg4)
+pyth1$resid5 <- residuals(reg5)
+
+reg.resp <- lm(resid2 ~ resid4, pyth1)
+plot(pyth1$resid2, pyth1$resid4, xlab = "residuals from regressing x1 on x2", ylab= "residulas from regressing y on x2", main = "partial regression plot for x1")
+abline(coef(reg.resp)[1], coef(reg.resp)[2])
+
+
+reg.resp2 <- lm(resid3 ~ resid5, pyth1)
+plot(pyth1$resid3, pyth1$resid5, xlab = "residuals from regressing x2 on x1", ylab= "residulas from regressing y on x1", main = "partial regression plot for x2")
+abline(coef(reg.resp2)[1], coef(reg.resp2)[2])
+
+
+
+```
+
+$\textbf{Part (c)}$
+
+The dotted lines show the $\pm 1$ standard-deviation bounds. While this should not increase the confidence in other assumptions, there is no clear pattern to the residuals plotted against the fitted values, as there should not be: there is nothing (here) suggesting a violation of the linearity assumption. Although I cannot find literature on the intepretation of residuals plotted against the predictors (as one of the plots to consider for model evaluation according to the disjunctive suggestion on page 140 and in figure 10.1), the plot against $x_2$ exhibits a clearly non-linear (parabolic) relation; if it's a necessary condition that neither the plot against the fitted values nor the plots against predictors indicate nonlinear relations, then the assumption is violated.
+```{r}
+pyth1$res <- residuals(reg1)
+pyth1$y_hat <- fitted(reg1)
+pyth1$sigma <- sigma.hat(reg1)
+
+residual.plot(pyth1$y_hat, pyth1$res, pyth1$sigma)
+
+residual.plot(pyth1$x1, pyth1$res, pyth1$sigma)
+residual.plot(pyth1$x2, pyth1$res, pyth1$sigma)
+```
+
+
+
+\textit{Shadow topic:}
+One of the purposes of the residual plots is to assess whether a linear regression model is appropriate for the data. For example, if the points in a residual plot are randomly dispersed around the horizontal axis, a linear regression is appropriate. Otherwise, a non-linear model is more appropriate.It is sometimes helpful in assessing the presence or lack of a strong pattern in the residual plots to add a locally weighted regression line (a loess smoother). The non-linear relation in the third plot, for instance, is here even more apparent.
+
+```{r}
+
+ggplot(pyth1, aes(x=pyth1$y_hat, y=pyth1$res)) + geom_point() + theme_light() + xlab("fitted value") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+
+ggplot(pyth1, aes(x=pyth1$x1, y=pyth1$res)) + geom_point() + theme_light() + xlab("x1") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+
+ggplot(pyth1, aes(x=pyth1$x2, y=pyth1$res)) + geom_point() + theme_light() + xlab("x2") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+```
+
+
+
+
+
+$\textbf{Part (d)}$
+
+Looking at the predicted values and their prediction intervals, as well as the $R^2$ and the small standard errors corresponding to the coefficients of the indpendendent variables from the originial reg1 fit suggest that one could feel quite confident about the predictions, insofar as non-linear relation between the residuals and $x_2$ demonstrated above does not violate an assumption of the regression model - the answer to this, unfortunately, I could not find in the book (presumably it's in chapter 13) nor by relying on online resoruces
+
+```{r}
+predict.lm(reg1, pyth2, interval = "prediction", level = 0.95, se.fit = TRUE)
+```
+
+\textit{related to where the data come from (since I don't have access to the referenced book)}
+
+Exploring whether adding a squared $x_2$, i.e., $x_2^2$, would be more appropriate for the model, assuming the plot of residuals vs $x_2$ does indicate a violation of linearity.
+```{r}
+pyth1$x2sq <- (pyth1$x2)^2
+pyth1$x1sq <- (pyth1$x1)^2
+pyth1$ysq <- (pyth1$y)^2
+reg.alt <- lm(ysq ~ x1 + x2 + x2sq, pyth1)
+display(reg.alt)
+```
+
+```{r}
+pyth1$res.alt <- residuals(reg.alt)
+pyth1$y_hat.alt <- fitted(reg.alt)
+pyth1$sigma.alt <- sigma.hat(reg.alt)
+
+ggplot(pyth1, aes(x=pyth1$y_hat.alt, y=pyth1$res.alt)) + geom_point() + theme_light() + xlab("fitted value") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+
+ggplot(pyth1, aes(x=pyth1$x1, y=pyth1$res.alt)) + geom_point() + theme_light() + xlab("x1") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+
+ggplot(pyth1, aes(x=pyth1$x2, y=pyth1$res.alt)) + geom_point() + theme_light() + xlab("x2") + ylab("residual") + geom_smooth(color='blue') + geom_abline(intercept = 0, slope = 0, color="black")
+```
+The fact that now the plot of residuals against $x_2$ is now an almost perfect parabola and that the coefficient on $x_2^$ is  urges one to see whether the model generating the data is really just $y = x_1^2 + 

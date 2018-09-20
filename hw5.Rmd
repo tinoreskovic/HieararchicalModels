@@ -1,0 +1,136 @@
+---
+title: "Hw5"
+author: "Jade Le-Cascarino, Tin Oreskovic"
+date: "2/4/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+6.6.2.
+```{r}
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("stargazer")
+```
+
+a) 
+
+
+Reggressing the percentage of the total population Aged 15-24 neither in the workforce nor in education in 2013 on the corresponding percentage in 2007, by EU NUTS2 Regions (EU's geographical unit nomenclature).
+```{r}
+unemployment1 <- read.csv("~/Desktop/unemployment1.csv", sep=";")
+library(stargazer)
+lm_1 <- lm(X2013 ~ X2007, data=unemployment1)
+stargazer(lm_1, type = "text", title="Results", align=TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(unemployment1, aes(x=X2007, y=X2013)) +
+    geom_point(shape=1) +    
+    geom_smooth(method=lm,   
+                se=FALSE) + theme_light() + scale_x_continuous(name = "Youth Unemployment in 2007") + scale_y_continuous(name = "Youth Unemployment in 2013") + ggtitle("% of Total Population Aged 15-24 Neither in the Workforce nor in Education")
+
+```
+
+
+
+b)
+Examininig the features of the data.
+```{r}
+summary(unemployment1$X2007, na.rm=TRUE)
+sd(unemployment1$X2007, na.rm=TRUE)
+summary(unemployment1$X2013, na.rm=TRUE)
+sd(unemployment1$X2013, na.rm=TRUE)
+```
+
+
+
+```{r}
+ggplot(unemployment1, aes(X2007)) + geom_histogram(bins=60) + theme_classic()
+```
+
+
+Simulating fake data.
+```{r}
+N <- 435
+causes2007 <- rnorm(N, 16.53, 4.1)
+causes2013 <- rnorm(N, 25.35, 7.5)
+noise2007 <- rnorm(N, 0, 4.1)
+noise2013 <- rnorm(N, 0, 7.5)
+un2007 <- causes2007 + noise2007
+un2013 <- causes2013 + noise2013
+fake_un <- data.frame(un2007, un2013)
+```
+
+
+```{r}
+lm2 <- lm(un2013 ~ un2007, data=fake_un)
+stargazer(lm2, type = "text", title="Results with Fake Data", align=TRUE)
+```
+
+```{r}
+ggplot(fake_un, aes(x=un2007, y=un2013)) +
+    geom_point(shape=1) +    
+    geom_smooth(method=lm,   
+                se=FALSE) + theme_light() + scale_x_continuous(name = "(Fake) Youth Unemployment in 2007") + scale_y_continuous(name = "(Fake) Youth Unemployment in 2013") + ggtitle("Fake % of Total Population Aged 15-24 Neither in the Workforce nor in Education")
+
+```
+
+6.6.3.
+a)
+
+```{r cars}
+N = 500
+true_ability = rnorm(N,5,1)
+noise_1 = rnorm(N,0,1)
+noise_2 = rnorm(N,0,1)
+maneuver_1 = true_ability + noise_1
+maneuver_2 = true_ability + noise_2
+exams = data.frame(maneuver_1, maneuver_2)
+
+lm2 = lm(maneuver_2 ~ maneuver_1, data = exams)
+lm2
+```
+
+```{r}
+plot(maneuver_1, maneuver_2, xlab = "Maneuver 1 Scores",
+     ylab = "Maneuver 2 Scores",
+     col= ifelse(maneuver_1 <= 3,'red',
+          ifelse(maneuver_1 >= 7,'blue',
+          ifelse(maneuver_1 >3 && maneuver_1 < 7, 'black'))))
+```
+
+
+b) 
+Average change with negative reinformcement 
+```{r}
+library(dplyr)
+exams %>% 
+  filter(maneuver_1 <= 3) %>% 
+  summarise(mean(maneuver_2 - maneuver_1)) 
+
+```
+
+Average change with positive reinforcement 
+```{r}
+exams %>% 
+  filter(maneuver_1 >= 7) %>% 
+  summarise(mean(maneuver_2 - maneuver_1)) 
+
+```
+
+The average score changes with negative reinforcement is about 1.2 points and the average score changes with positive reinforcement is about -1.3 points. 
+What's happening here is called the regression towards the means paradox. The pattern of regression to the mean, that is, the slope of the line, here at 0.503, is a consequence of noise in the data: a pilot who scores very well on first maneuver is likely to have been somewhat lucky and also to have a high level of skill, thus in the second maneuver it makes sense for the pilot to do better than the average but worse than on the first maneuver. For that reason, those who scored highly on the first maneuver are also more likely to score less high, hence the negative percentage change, and vice versa.  
+
+
+
+

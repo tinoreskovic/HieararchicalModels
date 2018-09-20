@@ -1,0 +1,131 @@
+---
+title: "hw24"
+author: "Tin, Jade"
+date: "4/20/2018"
+output:
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$\textbf{3.2}$
+
+
+```{r}
+library(rstanarm)
+library(ggplot2)
+library(arm)
+library(dplyr)
+#install.packages("R2WinBUGS")
+#install.packages("rstanarm")
+```
+
+
+```{r}
+library(R2WinBUGS)
+```
+
+```{r}
+#cd4 <- read.csv("http://www.stat.columbia.edu/~gelman/arm/examples/cd4/allvar.csv")
+cd4 <- read.csv("~/Desktop/allvar.csv")
+attach.all (cd4)
+```
+
+```{r}
+ok <- treatmnt==1 & !is.na(CD4PCT) & (baseage>1 & baseage<5)
+attach.all (cd4[ok,])
+```
+
+
+
+```{r}
+y <- sqrt (CD4PCT)
+age.baseline <- baseage        # kid's age (yrs) at the beginning of the study
+age.measurement <- visage      # kids age (yrs) at the time of measurement
+treatment <- treatmnt
+time <- visage - baseage
+```
+
+
+```{r}
+unique.pid <- unique (newpid)
+n <- length (y)
+J <- length (unique.pid)
+person <- rep (NA, n)
+for (j in 1:J){
+  person[newpid==unique.pid[j]] <- j
+}
+```
+
+
+
+```{r}
+#cd4$sqrtCD4 <- sqrt(cd4$CD4PCT)        UNECESSARY GIVEN ABOVE, this is old, but                                               keeping it just in case
+#cd4$time <- cd4$visage - cd4$baseage
+#cd4<- cd4[-which(is.na(cd4$time)),]
+#cd4<- cd4[-which(is.na(cd4$CD4PCT)),]
+```
+
+
+$\textbf{(a)}$
+```{r}
+fit1 <- stan_glmer(y ~ time + (1 | person), data = cd4) 
+```
+
+
+```{r}
+print(fit1)
+```
+
+$\textbf{(b)}$
+
+```{r}
+fit2 <- stan_glmer(y ~ time + treatment + age.baseline + (1 | person), data = cd4)
+```
+
+```{r}
+print(fit2)
+```
+
+$\textbf{(c)}$
+
+Hint: Compare the within and between variances. To the plot you did in Exercise 1, add the linear treads from the multilevel model for the 8 children.
+
+```{r}
+fit1b <- lmer(y ~ time  + (1 | person), data = cd4)
+fit2b <- lmer(y ~ time + treatment + age.baseline + (1 | person), data = cd4)
+```
+
+
+```{r}
+cofs <- coef(fit2b)
+cofss <- do.call("rbind", as.list(cofs))
+
+uniq <-by(cd4, cd4$newpid, tail, n=1)
+uniq_b<-do.call("rbind", as.list(uniq))
+
+uniq_b$intercept <- cofss$"(Intercept)"
+uniq_b$slope <- cofss$"time"
+cbind(uniq_c, cofss)
+```
+
+
+
+
+
+
+```{r}
+library(ggplot2)
+ggplot(allvar, aes(x=time, y=sqrt_cd4) ) + 
+        geom_point(aes(color = factor(allvar$newpid))) +
+        geom_line(stat = "smooth", method = lm, aes(color = factor(allvar$newpid)), se = FALSE, alpha = 0.3) +
+        scale_color_discrete(name="id") + 
+        theme_light() + theme(legend.position="none")
+```
+
+

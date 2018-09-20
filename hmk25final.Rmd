@@ -1,0 +1,168 @@
+---
+title: "hw25"
+author: "Tin, Jade"
+date: "4/29/2018"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+#install.packages("rstanarm")
+```
+
+$\textbf{3.2}$
+
+
+```{r include=FALSE}
+library(rstanarm)
+library(ggplot2)
+library(arm)
+library(dplyr)
+#install.packages("R2WinBUGS")
+#install.packages("rstanarm")
+```
+
+
+
+```{r}
+cd4 <- read.csv("http://www.stat.columbia.edu/~gelman/arm/examples/cd4/allvar.csv")
+# cd4 <- read.csv("~/Desktop/allvar.csv")
+cd4$sqrtCD4 <- sqrt(cd4$CD4PCT)       
+cd4$time <- cd4$visage - cd4$baseage
+cd4<- cd4[-which(is.na(cd4$time)),]
+cd4<- cd4[-which(is.na(cd4$CD4PCT)),]
+```
+
+
+We need the previous exercise to complete $\textbf{(3.4)}$
+
+
+$\textbf{3.3 (a)}$
+
+```{r include=FALSE}
+fit2 <- stan_glmer(sqrtCD4 ~ time + treatmnt + baseage + (1 | newpid),  data = cd4)
+```
+Use the model fit from Exercise 3.2(b) to generate simulation of predicted CD4 percentages for each child in the dataset at a hypothetical time point. 
+```{r}
+#Removing all rows with NAs because posterior_predict doesn't allow for NAs
+pred_data_= cd4[complete.cases(cd4), ]
+
+#Selecting a hypothetical time point
+pred_data_$VDATE <- as.Date("1999-04-29")
+#Estimating the predicted CD4 percentage for each child
+newpred <- posterior_predict(fit2, newdata = pred_data_)
+
+```
+
+$\textbf{3.3 (b)}$
+Use the same model fit to generate simulations of CD4 percentages at each of the time periods for a new child who was 4 years old at baseline. 
+
+```{r}
+#subsetting original cd4 for only when baseage is close to 4 (there is no observation where age is exactly 4)
+pred_data_4yr <- subset(cd4, (baseage  > 3.99 & baseage < 4.01)) 
+
+#removing NAs
+pred_data_4yr= pred_data_4yr[complete.cases(pred_data_4yr), ]
+
+#indicating new child with new newpid
+pred_data_4yr$newpid = 300
+
+#feed into model
+pred_4yr <- posterior_predict(fit2, newdata = pred_data_4yr)
+
+
+```
+
+
+On to exercise $\textbf{3.4}$
+
+
+```{r}
+final_data <- cd4[complete.cases(cd4), ]
+final_data$VDATE <- max(as.Date(final_data$VDATE,format="%m/%d/%Y"), na.rm = T)
+
+
+fin_actual <- cd4[complete.cases(cd4), ]
+fin_actual$VDATE <- max(as.Date(fin_actual$VDATE,format="%m/%d/%Y"), na.rm = T)
+
+mean.cd4 <- mean(posterior_predict(fit2, newdata = final_data), na.rm = T)
+sd.cd4 <- sd(posterior_predict(fit2, newdata = final_data), na.rm = T)
+
+set.seed(10)
+
+hist_sim <- as.data.frame(rnorm(1000, mean.cd4, sd = sd.cd4))
+hist_sim$x <- hist_sim$`rnorm(1000, mean.cd4, sd = sd.cd4)`
+hist(rnorm(1000, mean.cd4, sd = sd.cd4))
+
+  
+ggplot() + geom_histogram(data=hist_sim, aes(hist_sim$x), col="blue", fill="green") + theme_light() + labs(x="simualuted") 
+
+ggplot() + geom_histogram(data=fin_actual, aes(fin_actual$sqrtCD4), col="white", fill="grey") + theme_light() + labs(x="actual") 
+```
+
+
+$\textit{Shadow topic: a neater way to compare}$
+
+```{r}
+ggplot() + geom_density(data=hist_sim, aes(hist_sim$x), col="blue", fill="green", alpha = 0.3) + theme_light() + labs(x="simualuted") + geom_density(data=fin_actual, aes(fin_actual$sqrtCD4), col="blue", fill="grey", alpha = 0.3) + labs(title = "green - simulated; grey - actual", y ="Density") 
+```
+
+
+
+And $\textbf{3.5}$
+```{r include=FALSE}
+#install.packages("mosaic")
+library('mosaic')
+library('rstanarm')
+
+# 3.  Multilevel model including uranium as a county-level predictor
+srrs2 = read.table('http://www.stat.columbia.edu/~gelman/arm/examples/radon/srrs2.dat', 
+                   header=T, sep=",")
+
+
+# read in and clean the data
+mn <- srrs2$state=="MN"
+radon <- srrs2$activity[mn]
+log.radon <- log (ifelse (radon==0, .1, radon))
+floor <- srrs2$floor[mn]       # 0 for basement, 1 for first floor
+n <- length(radon)
+y <- log.radon
+x <- floor
+
+# get county index variable
+
+county.name <- as.vector(srrs2$county[mn])
+uniq <- unique(county.name)
+J <- length(uniq)
+county <- rep (NA, J)
+for (i in 1:J){
+  county[county.name==uniq[i]] <- i
+}
+
+# get the county-level predictor
+
+sample.size <- as.vector (table (county))
+sampleSize.full = sample.size[county]
+
+```
+
+```{r include=FALSE}
+# fit the model using stan_glmer
+options(mc.cores = parallel::detectCores())
+M1 <- stan_glmer(y ~ x + sampleSize.full + (1 | county))
+```
+
+```{r}
+print (M1)
+```
+
+
+
+
+
+

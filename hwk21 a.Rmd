@@ -1,0 +1,83 @@
+---
+title: "Partial Regression Plots"
+author: "Tin"
+date: "4/12/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(arm)
+df <- read.csv("~/Desktop/soccer_prominence.csv")
+```
+
+
+
+Looking at the ddirect relationship between $\textbf{log_media_mentions}$ and $\textbf{log_transfer_value}$:
+
+```{r fig.height=4, fig.width=6}
+library(ggplot2)
+df$log_transfer_value <- log(df$transfer_value)
+df$log_media_mentions <- df$logmentions
+df$FIFA_quality <- df$primary
+df$age_at_transfer <- df$transfer_age
+# look at direct relationship for "mentions"
+ggplot(df, aes(x=logmentions, y=log_transfer_value)) + geom_point() + theme_light() + ylab("log(transfer value)") + xlab("log(media mentions)") + geom_smooth(method='lm', se=FALSE)
+```
+
+
+
+Run the linear model:
+```{r}
+simple_model <- lm(log_transfer_value ~ log_media_mentions + FIFA_quality + age_at_transfer, data = df)
+```
+
+```{r}
+summary(simple_model)
+```
+```{r}
+display(simple_model)
+```
+
+For a given regression model:
+
+$$ Y_i = \alpha + \beta X_i_1 + \gamma X_i_2 + \delta X_i_3 + \epsilon_i^1 $$
+
+
+
+Partial regression plots are obtained by computing:
+
+$\textbf{(i)}$ the residuals regressing the dependent variable against the independent variables but omitting the independent variable of interest:
+
+
+$\textbf{(ii)}$ the residuals from regressing the independent variable of interest against the remaining independent variables, and $\textbf{(iii)}$ plotting the residuals from step (i) against the residuals from (ii). 
+
+The benefit of this plot is that the least squares linear fit has the slope $\beta_{i}$ (of the variable of interest in the original model) and intercept zero.
+
+
+```{r}
+#install.packages("car")
+library("car")
+```
+
+The partial regression plot (Added Variable Plot), for the variable of interest $log$ from the multiple regression model.
+
+```{r fig.height=6, fig.width=6}
+
+avPlots(simple_model, "log_media_mentions", col = "Black", col.lines = "Blue", lwd= 3, 
+       ylab = "residuals from regressing y on everything but x1:   log(transfer values) ~ EVERYTHING BUT log(media mentions)",
+       xlab ="residuals from regressing x1 on all the other predictors:  log(media mentions) ~ remainings predictors", grid = FALSE,
+       main = "Partial Regression Plot: Media Mentions")
+```
+```{r fig.height=8, fig.width=6}
+avPlots(simple_model, col = "Black", col.lines = "Blue", lwd= 3)
+```
+
+

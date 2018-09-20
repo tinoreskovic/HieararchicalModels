@@ -1,0 +1,192 @@
+---
+title: "hw24"
+author: "Tin, Jade"
+date: "4/20/2018"
+output:
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+#install.packages("rstanarm")
+```
+
+
+$\textbf{3.2}$
+
+
+```{r include=FALSE}
+library(rstanarm)
+library(ggplot2)
+library(arm)
+library(dplyr)
+#install.packages("R2WinBUGS")
+#install.packages("rstanarm")
+```
+
+
+
+```{r}
+#cd4 <- read.csv("http://www.stat.columbia.edu/~gelman/arm/examples/cd4/allvar.csv")
+cd4 <- read.csv("~/Desktop/allvar.csv")
+cd4$sqrtCD4 <- sqrt(cd4$CD4PCT)       
+cd4$time <- cd4$visage - cd4$baseage
+cd4<- cd4[-which(is.na(cd4$time)),]
+cd4<- cd4[-which(is.na(cd4$CD4PCT)),]
+```
+
+
+We need the previous exercise to complete $\textbf{(3.4)}$
+
+
+$\textbf{3.3 (a)}$
+
+```{r include=FALSE}
+fit2 <- stan_glmer(sqrtCD4 ~ time + treatmnt + baseage + (1 | newpid),  data = cd4)
+```
+Use the model fit from Exercise 3.2(b) to generate simulation of predicted CD4 percentages for each child in the dataset at a hypothetical time point. 
+```{r}
+#Removing all rows with NAs because posterior_predict doesn't allow for NAs
+pred_data_= cd4[complete.cases(cd4), ]
+
+#Selecting a hypothetical time point
+pred_data_$VDATE <- as.Date("1999-04-29")
+#Estimating the predicted CD4 percentage for each child
+newpred <- posterior_predict(fit2, newdata = pred_data_)
+
+```
+
+$\textbf{3.3 (b)}$
+Use the same model fit to generate simulations of CD4 percentages at each of the time periods for a new child who was 4 years old at baseline. 
+
+```{r}
+#subsetting original cd4 for only when baseage is close to 4 (there is no observation where age is exactly 4)
+pred_data_4yr <- subset(cd4, (baseage  > 3.99 & baseage < 4.01)) 
+
+#removing NAs
+pred_data_4yr= pred_data_4yr[complete.cases(pred_data_4yr), ]
+
+#indicating new child with new newpid
+pred_data_4yr$newpid = 300
+
+#feed into model
+pred_4yr <- posterior_predict(fit2, newdata = pred_data_4yr)
+
+
+```
+
+
+On to exercise $\textbf{3.4}$
+
+FIRST VERSION:
+```{r}
+cd4$VDATE <- as.Date(cd4$VDATE, format = "%m/%d/%Y")
+# Make the data similar to the model in mod2
+finaltime_data <- subset(cd4, !is.na(treatmnt) & !is.na(baseage))
+finaltime_data <- finaltime_data[complete.cases(finaltime_data), ]
+# Assign the final date to the date variable
+finaltime_data$VDATE <- as.Date(max(finaltime_data$VDATE, na.rm = T))
+
+# Only select the variables present in the model
+finaltime_data <- finaltime_data[, -c(1, 4, 5, 6, 8)]
+
+# Calculate the mean predicted CD4 percentage and it's standard deviation
+mean_cd4 <- mean(posterior_predict(fit2, newdata = finaltime_data), na.rm = T)
+sd_cd4 <- sd(posterior_predict(fit2, newdata = finaltime_data), na.rm = T)
+
+# Simulate 1000 observations considering the uncertainty
+# and look at the distribution.
+set.seed(421)
+
+hist(rnorm(1000, mean_cd4, sd = sd_cd4))
+```
+
+```{r}
+cd4 <- subset(cd4, !is.na(VDATE))
+cd4[cd4$VDATE == max(cd4$VDATE, na.rm = T), ]
+mean(c(39.0, 21.2))
+```
+
+So our predictions are extremely uncertain. Over half our simulations are underestimating the date and a handful are overestimating the results. It looks like our model is terrible at predicting that final time point
+
+
+SECOND VERSION:
+
+```{r}
+#create data 
+final.time.data <- subset(cd4, !is.na(treatmnt) & !is.na(baseage))
+final.time.data <- final.time.data[complete.cases(final.time.data), ]
+#force time to be last date "final" (and remove omissions)
+final.time.data$VDATE <- max(as.Date(final.time.data$VDATE,format="%m-%d-%Y"), na.rm = T)
+
+#calculate mean and sd from new data
+cd4.mean <- mean(posterior_predict(fit2, newdata = final.time.data), na.rm = T) #mean 
+cd4.sd <- sd(posterior_predict(fit2, newdata = final.time.data), na.rm = T) #standard deviation
+
+#simulate 1000 times 
+set.seed(100)
+hist(rnorm(1000, cd4.mean, cd4.sd))
+
+#Compare distribution at final time point for actual data 
+hist(final.time.data$CD4PCT.sqrt)
+```
+
+
+THIRD VERSION, only works with LMER, not with STAN_GLMER:
+
+```{r setup, include=FALSE}
+library(lme4)
+d <- cd4
+
+#y.tilde<- #wanted
+fit3 <- lmer(sqrtCD4 ~ time + treatmnt + baseage + (1 | newpid), data=d)
+
+#generate dataset to store results
+new.d<-data.frame(y.tilde=rep(NA,nrow(d)),d$visage,d$baseage)
+
+#simulate data for final time point
+final.time<-max(d$time)
+#final.time<-max(d$VDATE)
+which.id<-d[which(d$time==final.time),"newpid"]
+treatmnt<-d$treatmnt
+baseage<-d$baseage
+
+a.hat.M2 <- fixef(fit3)[1] + fixef(fit3)[3]*treatmnt + fixef(fit3)[3]*baseage + ranef(fit3)$newpid
+b.hat.M2 <- fixef(fit3)[2]
+
+set.seed(123)
+x.tilde <- final.time
+sigma.y.hat <- sigma.hat(fit3)$sigma$data
+coef.hat <- as.matrix (coef(fit3)$newpid)[which.id,]
+y.tilde <- rnorm (nrow(d), coef.hat %*% c(1, x.tilde, d$treatmnt[which.id],d$baseage[which.id]), sigma.y.hat)
+mean(y.tilde) #3.865065
+
+
+## repeat and compare posterior distribution
+n.sims <- 1000
+sims.array<-array(NA,dim=c(nrow(d),n.sims))
+for(i in 1:n.sims){
+print(i)
+    sims.array[,i]<-rnorm (nrow(d), coef.hat %*% c(1, x.tilde, d$treatmnt[which.id],d$baseage[which.id]), sigma.y.hat)
+}
+```
+
+```{r}
+hist(colMeans(sims.array),30,xlim=c(3.7,4.3),col="black")
+abline(v=d[which.id,"sqrt"],col="red")
+```
+
+
+
+
+And $\textbf{3.5$
+```{r}
+
+```
+

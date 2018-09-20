@@ -1,0 +1,62 @@
+---
+title: "HW6"
+author: "Jade Le-Cascarino, Tin Oreskovic"
+date: "2/6/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("ggplot2")
+#install.packages("latex2exp")
+```
+
+```{r}
+library(ggplot2)
+library(arm)
+library(latex2exp)
+
+n <- 100
+a <- 5
+b <- 7 
+x <- runif(n, min=0, max=50)
+e <- rnorm(n, 0, 3)
+y <- a + b*x + e
+dat <- data.frame(xvar = x, yvar = y)
+lm_1 <- lm(y ~ x, data=dat)
+
+display(lm_1)
+
+plot(dat$x, dat$y, main="fitted regression line", xlab="X (uniform[0:50])", ylab="Y = 5 + 7*x + e")
+a_hat <- coef(lm_1)[1]
+b_hat <- coef(lm_1)[2]
+abline(a_hat, b_hat)
+x_bar <- mean(dat$x)
+text(x_bar, a_hat + b_hat*x_bar,
+     paste("y=", round(a_hat, 2), "+", round(b_hat, 2), "*x"), adj=1.2)
+```
+
+Shadow topic:
+Repeating the exercise with a differently generated $x$ and $\epsilon$, i.e. so that the standard deviation of the $\epsilon$ term is larger, the regression of $y$ on $x$ explains a much smaller proprotion of the data ($R^2$). This is because the ordinary least squares regression finds the intercept $\hat{a}$ and coefficient $\hat{b}$ that minimize the sum of the squared residuals $\sum_{i=1}^{n}\left((a +bx_i + \epsilon_i) - (\hat{a} + \hat{b}x_i)\right)^2$, but the $\epsilon$ now makes the first term more commonly further away from the line $\hat{a} + \hat{b}x$.
+```{r}
+points <- 100
+const <- 5
+coeff <- 7 
+x <- rnorm(points, 50, 2)
+e <- rnorm(points, 0, 30)
+y <- const + coeff*x + e
+dat2 <- data.frame(xvar = x, yvar = y)
+lm_2 <- lm(y ~ x, data=dat2)
+
+display(lm_2)
+
+
+ggplot(dat2, aes(x=xvar, y=yvar)) +
+    geom_point(shape=1) +    
+    geom_smooth(method=lm,   
+                se=FALSE) + theme_light()   
+```
+

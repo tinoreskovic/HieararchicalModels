@@ -1,0 +1,211 @@
+---
+title: "hw17"
+author: "Jade, Tin"
+date: "3/25/2018"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Playing with invlogit function to get a better understanding 
+
+```{r}
+income = abs(rnorm(100, 500, 500))
+  
+invlogit = function(x){
+  1/  (1 + exp(-x))
+}
+print(invlogit(-1.40 + 0.33 * mean(income)))
+print(invlogit(-1.40 + 0.33 * 799))
+print(invlogit(-1))
+```
+
+$\textbf{12.3}$ The algebra of logistic regression with one predictor 
+
+Pr(high_sch_grad) = invlogit(intercept + coef * parents_earning)
+0.27 = invlogit(intercept + coef * 0)
+0.88 = invlogit(intercept + coef * 60000)
+
+Therefore,
+0.27 = invlogit(intercept)
+0.27 = 1 / (1 + exp(-intercept))
+100 = 27 + 27* exp(-intercept))
+73/27 = exp(-intercept) 
+intercept = log(-73/27)
+intercept 
+```{r}
+intercept = -log(73/27) 
+intercept 
+```
+```{r}
+invlogit(intercept)
+```
+0.88 = 1 / (1 + exp((intercept + coef * 60000)))
+log(12/88) = log(exp(intercept + coef * 60000))
+
+
+```{r}
+coef = (-log(12/88) - intercept) / 60000
+coef
+```
+
+```{r}
+invlogit(intercept + coef * 60000)
+```
+
+The equation is: 
+```{r}
+print(c(intercept, "+", coef, "* x"))
+```
+
+
+$\textit{Shadow topic:}$ graphing the model may be more informative than looking at the numeric output:
+```{r}
+library("ggplot2")
+ggplot(data.frame(x=c(0, 20)), aes(x), xlab="a", ylab = "c" ) + stat_function(fun=function(x) invlogit(-0.994 + 0.497 * x)) + theme_light() + xlab("income in units of $10'000") + ylab("prob(high school completion)")
+```
+
+
+
+
+$\textbf{12.5}$ Working with logistic regression 
+n = 50 #students 
+score_mean = 60
+score_sd = 15 
+Pr(pass) = inv.logit(-24 + 0.4x)
+
+
+```{r}
+library("gtools")
+n = 50 #students 
+score_mean = 60
+score_sd = 15 
+x = rnorm(n, score_mean, score_sd)
+fitted_p <- inv.logit(-24 + 0.4*x)
+pass_f <- rbinom(50, 1, fitted_p)
+midterm <- data.frame(x, pass_f)
+```
+
+$\textbf{(a)}$
+```{r}
+library("ggplot2")
+ggplot(data=data.frame(x=c(0,100)), aes(x=x)) + stat_function(fun=function(x) inv.logit(-24 + 0.4*x))+geom_point(data= data.frame(x, pass_f), aes(x, pass_f), alpha=0.2) +
+    guides(fill=FALSE) + theme_light() + ylab("hypothetical pass/fail") + xlab("score")
+
+
+```
+
+$\textbf{(b)}$
+The intercept is no longer present, and the coefficients are found from the product of the standard deviation of the $x$ values and the corresponding $\hat{\beta}$ estimates.
+
+Prob(passing) = logit$^{-1}(-24 + 0.4x)$ $\longrightarrow$ Prob(passing) $= $logit${-1}(0 + 0.4*15) = $logit$^{-1}(6x)$.
+
+
+$\textbf{(c)}$
+
+
+
+```{r}
+library("arm")
+
+x1 = rnorm(n, 60, 15)
+fitted_p1 <- invlogit(-24 + 0.4*x)
+pass_f1 <- rbinom(50, 1, fitted_p1)
+midterm1 <- data.frame(x1, pass_f1)
+rnorm
+##
+newpred <- rnorm(n, 0, 1)
+x2 = rnorm(n, 60, 15)
+
+fitted_p2 <- invlogit(-24 + 0.4*x)
+pass_f2 <- rbinom(50, 1, fitted_p2)
+midterm2 <- data.frame(x2, pass_f2)
+
+vers1 <-  glm(pass_f1 ~ x1,  data=midterm, family=binomial(link="logit"))
+  
+vers2 <-  glm(pass_f2 ~ x2 + newpred, data=midterm2, family=binomial(link="logit"))
+
+display(vers1)
+display(vers2)
+
+```
+
+```{r}
+deviancediff = deviance(vers1) - deviance(vers2)
+print(c("As expected, the residual deviance lowers only slightly(",deviancediff,")when noise is added as a predictors."))
+```
+
+
+$\textit{Shadow topic:}$
+```{r}
+fit <- predict(vers1)
+fit2 <- predict(vers2)
+resid <- residuals(vers1)
+resid2 <- residuals(vers2)
+binnedplot(fit,resid)
+binnedplot(fit2,resid2)
+
+```
+
+Similarly, nothing about the binned residual plots suggests the more complex model should be preferred.
+
+
+$\textbf{12.6.}$
+
+
+
+$\textbf{12.7.}$ Limitation of logistic regression 
+
+```{r}
+library("arm")
+x = c(1:20)
+
+y = rbinom(20, 1, 0.6)
+round
+fake = data.frame(x,y)
+logit = glm(y ~ x, family=binomial(link="logit"), data=fake)
+display(logit)
+```
+```{r}
+cm = x*2.54
+logit2 = glm(y ~ cm, family=binomial(link="logit"), data=fake)
+display(logit2)
+print(cm)
+print(x)
+```
+
+
+
+
+
+
+
+```{r}
+#creating a function to jitter the binary outcome while keepin the points between 0 and 1 
+jitter_binary = function(a, jitt = 0.05) {
+  ifelse(a == 0, runif(length(a), 0, jitt), runif(length(a), 1 - jitt, 1))
+}
+
+
+#graphing data and fitted model 
+fake$y_jitter = jitter_binary(fake$y)
+plot(fake$x, fake$y_jitter)
+curve(inv.logit(coef(logit)[1] + coef(logit)[2] * x), add = TRUE)
+
+
+ggplot(data=data.frame(x = c(1:20)), aes(x=x)) + stat_function(fun=function(x) (inv.logit(coef(logit)[1] + coef(logit)[2]*x)))+geom_point(data= data.frame(x, y), aes(x, y)) +
+    guides(fill=FALSE) + theme_light() + ylab("fake y") + xlab("fake x")
+
+cor(x,y)
+
+```
+
+The difference between the resdual deviance and the null deviance is close to the number of predictors (indicating that it's not a good fit), and, most obviously, the dependent variable and the predictor are not very correlated - if anything, there is a very irregular pattern and attempting to explain the y with x seems like a poor idea.
+
+

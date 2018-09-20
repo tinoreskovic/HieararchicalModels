@@ -1,0 +1,137 @@
+---
+title: "hw22"
+author: "Tin, Jade"
+date: "4/13/2018"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+\textbf{2.1}
+
+\textbf{(a)}
+
+Write the notation for a varying-intercept multilevel logistic regression (with community districts as the groups for the probability of rodent infestation using the individual-level predictors but no group-level predictors.
+```{r}
+rodents = read.table("http://www.stat.columbia.edu/~gelman/arm/examples/rodents/apt.dat")
+colnames(rodents)
+```
+The Rodent dataset contains y (the probability of getting a rodent infestation), and other characteristics of the unit, defects, poor, race, floor, dist and bldg. Although race, floor, dist, bldg are categorical variables that can be treated as group-levels, for the purpose of this exercise, we will run a multi-level logistic regression with community district (var dist) as groups, and maintain all the other categorical variables as predictors for simplicity. 
+With this assumption, we will have following model notation: 
+$n$ is the number of observations (units) in the Rodent dataset. 
+
+$$ \Pr (y_j = 1) = \text{logit}^{-1} \left(\beta_{0} + \beta_{1}\text{poor} + \beta_{2} \text{race} + \beta_{3} \text{floor} + \beta_{4} \text{building} + \beta_{5} \text{defects} +  \alpha_{j[i]} \right)$$ 
+
+
+for $1, \dots, n$, where $n = 15894$
+
+
+\textbf{(b)}
+
+Expand the model in (a) by including the variables in dist.dat as group level predictors 
+We have 55 districts in the Rodent dataset, therefore j goes from 1 to 55. The following handwritten equation represents the second step of the multi-level regression that takes into account group level predictors. These predictors, as shown below, are dist.defects and dist.poor. 
+```{r}
+dist_info = read.table("http://www.stat.columbia.edu/~gelman/arm/examples/rodents/dist.dat")
+colnames(dist_info)
+```
+
+
+$$ \alpha_{j} \sim N \left( U_{j} \gamma , \quad \sigma_{2 \alpha} \right) $$
+
+for $j = 1, dots, 55$
+
+$U$ is the amtrix of ddistrict level predictors, dist.defects and dist.poor. $\gamma$ is the vector of coefficients for the district-level regression, andd $\sigma_\alpha$ is the standard edviation of the unexplained group-level errors
+
+
+
+
+```{r}
+library("arm")
+library("rstanarm")
+require(foreign)
+allvar <- read.csv("~/Desktop/allvar.csv")
+head(allvar)
+```
+
+$\textbf{2.4:}$
+
+$\textbf{(a)}$
+```{r}
+
+allvar$time <- allvar$visage - allvar$baseage
+allvar$sqrt_cd4 <- sqrt(allvar$CD4PCT)
+allvar<- allvar[-which(is.na(allvar$time)),]
+allvar<- allvar[-which(is.na(allvar$CD4PCT)),]
+head(allvar)
+```
+
+
+```{r fig.height=10, fig.width=13}
+library(ggplot2)
+ggplot((allvar), aes(x=time, y=sqrt_cd4)) + xlab("Time") + ylab("sqrt(CD4 Percentage)") +
+  geom_line(aes(col=as.factor(newpid), alpha=0.3)) + theme(legend.position="none") + theme_light() + theme(legend.position="none")
+```
+
+
+$\textbf{(b)}$
+
+```{r fig.height=10, fig.width=13}
+library(ggplot2)
+ggplot(allvar, aes(x=time, y=sqrt_cd4) ) + 
+        geom_point(aes(color = factor(allvar$newpid))) +
+        geom_line(stat = "smooth", method = lm, aes(color = factor(allvar$newpid)), se = FALSE, alpha = 0.3) +
+        scale_color_discrete(name="id") + 
+        theme_light() + theme(legend.position="none")
+```
+
+
+
+$\textbf{(c)}$
+
+```{r}
+fit1 <- lmer(sqrt_cd4 ~ time + (1 + time | newpid), data=allvar)
+display(fit1)
+```
+
+```{r}
+cofs <- coef(fit1)
+cofss <- do.call("rbind", as.list(cofs))
+
+uniq <-by(allvar, allvar$newpid, tail, n=1)
+uniq_c<-do.call("rbind", as.list(uniq))
+
+```
+
+```{r}
+uniq_c$intercept <- cofss$"(Intercept)"
+uniq_c$slope <- cofss$"time"
+cbind(uniq_c, cofss)
+```
+
+```{r}
+fit2 <- lm(intercept ~ treatmnt + baseage, data=uniq_c)
+display(fit2)
+
+fit3 <- lm(slope ~ treatmnt + baseage, data=uniq_c)
+display(fit3)
+```
+
+
+$\textit{Shadow topic:}$
+
+To estimate the 
+Using lmer with time + (1 + time | child) to have the slopes and the intercepts vary by child, and adding all of treatment, baseage, time:baseage, time:treatment, as additional group(child)-level predictors, with the interactions allowing treatment and baseage to be predictors in the regressions for the slopes as well as for the intercepts:
+
+
+```{r}
+fit5 <- lmer(sqrt_cd4 ~ time + treatmnt + baseage + time:baseage + time:treatmnt + (1 + time | newpid), data=allvar)
+display(fit5)
+```
+
+

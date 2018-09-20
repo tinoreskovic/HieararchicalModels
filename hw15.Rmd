@@ -1,0 +1,89 @@
+---
+title: "hw14"
+author: "Jade, Tin"
+date: "3/6/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$\textbf{11.2. (a)}$
+
+```{r}
+library(ggplot2)
+ggplot(data.frame(x=c(0, 90)), aes(x)) + stat_function(fun=function(x) 161 + 0.26*x) + labs(x="age", y="weight") + theme_light()
+
+```
+
+
+$\textbf{11.2. (b)}$
+
+```{r}
+library(ggplot2)
+ggplot(data.frame(x=c(0, 90)), aes(x)) + stat_function(fun=function(x) 161 + 0.26*x) + stat_function(fun=function(x) 96.2 + 3.36*x + - 0.032*x^2) + labs(x="age", y="weight") + theme_light()
+
+```
+
+$\textbf{11.2. (c)}$
+
+```{r}
+ggplot(data.frame(x=c(0, 90)), aes(x)) + 
+    stat_function(fun=function(x) 157.2 + ifelse(30<=x & x<45, 1, 0)*19.1 + ifelse(45<=x & x<65, 1, 0)*27.2 + ifelse(65<=x, 1, 0)*8.5) + labs(x="age", y="weight") + theme_light()
+```
+$\textbf{11.4. (a)}$
+
+
+
+
+$\textbf{11.4. (b)}$
+
+
+
+$\textbf{11.5. (a)}$
+
+
+$D_{i} ??? R_{i}$:
+This measure is symmetric, i.e. it captures the comparatively larger or smaller values of $D_i$ or $R_i$ compared to the other one symmetrically (in the same manner). It is also centered at $0$, which is beneficial for interpretation.
+
+One of its (significant) disadvantages is that it fails to account for the scale of either $D_i$ or $R_i$ - that is, the same difference might be much more significant when both  $D_i$ and $R_i$ are small: for instance, if  $D_i = \$2.5 mil.$ and $R_i = 0.5 mil.$,  the measure $D_i - R_i = 2mil.$, the same quanitity as when $D_i = \$52 mil.$ and $R_i = 50 mil.$, when the difference shouldn't be expected to matter nearly as much as in the first case. One also couldn't further transform the variable by taking its logarithm, since its value could be negative.
+
+
+
+
+$D_{i}/R_{i}$: 
+Unlike the first measure, this transformation take the scale of $D_i$ and $R_i$ into account: the ratio captures not only the difference between the quantities but also reflects the fact that, for instance, a fixed difference is less significant as both $D_i$ and $R_i$ grow.
+
+Its important disadvantage is that it is not symmetric. As $D_i$ gets much larger it will approach $\infty$, while, conversely, as $R_i$ gets much larger, it approaches $0$. In short, unlike the first measure, it does not capture the larger or smaller values of $D_i$ or $R_i$ compared to the other one symmetrically, and gives a higher significance to observations where $D_i$ is much larger. This a larger issue than the fact that it is not centered at $0$.
+
+
+
+
+$\log(D_i) - \log(R_i)$
+
+This transformation is more robust to the type of problem that the simple difference $D_i - R_i$ suffers from; i.e., it takes scale into account, and the same difference when both $D_i$ and $R_i$ are low will be considered more significant.
+
+A disadvantage is that it would be hard to interpret, i.e. it isn't immediately clear what the various numeric values of the measure (and the corresponding coefficient) represent in reality.
+
+
+
+
+$D_{i}/D_i + R_{i}$:
+Again, (like the second measure, the ratio,) this transformation take the scale of $D_i$ and $R_i$ into account: the relative proportion captures not only the difference between the quantities but also their scale. Another benefit is that unlike the ratio, it is symmetric, thus not suffering from the issue of implicitly assigning more significance to the case that $D_i$ or $R_i$ is larger than to the converse case. It is also bounded by 0 and 1 and its center is at 0.5, which aids interpretation.
+
+A disadvantage might be that it doesn't capture the possiblity that it's not only that the same difference is more significant when $D_i$ or $R_i$ are lower, but that the relative proportion of money raised might also be more important when $D_i$ or $R_i$ are lower. It's not as clear as with the difference that this is indeed a disadvantage, and even if it is, it isn't a disadvantage that the ratio measure avoids.
+
+
+$\textbf{11.5. (b)}$
+
+One possibility would be to make the measure discrete by assigning money raised to three or five categories, cenetered at 0, (-1, 0, 1   or  -2, -1, 0, 1, 2 ), which would stand for very low, low, medium, high, and very high $R_i$ and $D_i$. If the data exhibited naturally appearing cutoffs points, this transformation could be particularly appropriate, and perhaps a finer mapping could prove to be more useful (with more discrete values). While the advantage is an easy interpreation of the coefficients relating to the variables, a disadvantage would be that the measure would fail to capture small changes in money raised of one party (perhaps compared to the previous election) or differences in money raised between the parties, both of which might be relevant in 'closer' races.
+
+
+
+
+$\textbf{11.6.}$
+
+The regression predicts that an observation unit with a $1\%$ higher cigarettes price will have a  quantity purchased higher by $0.3\%$, on average.

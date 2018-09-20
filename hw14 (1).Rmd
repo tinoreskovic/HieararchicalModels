@@ -1,0 +1,48 @@
+---
+title: "hw14"
+author: "Jade, Tin"
+date: "3/6/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$\textbf{11.1. (a)}$
+
+```{r}
+exp(0.25)
+exp(-0.25)
+```
+
+
+Since the standard deviation = 0.25, approximately 68% of the persons will have weights within a factor of: [exp(predicted value - 0.25), exp(predicted value + 0.25)], i.e. of 0.78 and 1.28 of their predicted values from the regression.
+
+$\textbf{11.1. (b)}$
+
+```{r}
+
+N = 1000
+height<-rnorm(N,160,10) 
+log_height <- log(height)
+error<-rnorm(N,0,0.25) 
+log_weight<-rep(NA,N)
+
+for(i in 1:N){
+  log_weight[i] = 3.5 + 2*log_height[i] + error[i]
+}
+fake_data = data.frame(log_weight, log_height) 
+log_post = lm(log_weight ~ log_height, data=fake_data)
+plot(fake_data$log_weight ~ fake_data$log_height, main ='Regression Fit', xlab="heights(log)" , ylab = "weights(log)")
+abline(log_post, col="blue")
+```
+
+Shadow: 
+Similarly, we can predict weight based on age as a continuous variable. Much like height, we intuitively know that the relationship between age and weight are not linear, we get heavier as we get older, but at varying pace. Our weight stagnate at certain age intervals, and sometimes go up, or down, depending on the person. It would, likewise, make sense to transform the predictor age and weight in order to create a linear relationship on which we can appropriately apply a linear regression.
+
+
+
+

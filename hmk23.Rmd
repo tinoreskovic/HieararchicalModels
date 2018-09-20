@@ -1,0 +1,119 @@
+---
+title: "hw23"
+author: "Tin, Jade"
+date: "4/173/2018"
+output:
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+$\textbf{2.3}$
+
+$\textbf{(a)}$
+
+Using the following code in data wrangler, this was simpler to obtain:
+
+
+
+extract col: column1 at: 15,22
+extract col: column1 at: 24,31
+extract col: column1 at: 33,40
+extract col: column1 at: 42,50
+extract col: column1 at: 51,58
+extract col: column1 at: 60,67
+extract col: column1 after: `  ` before: `{end}`
+extract col: column1 on: `7 |6 |5 |4 |3 |2 |  |1 |pair`
+extract col: column1 on: `Performance|Program|criterion `
+keep row: in(sourcerownumber(), [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35])
+drop col: column1
+replace col: column9 with: '' on: `  ` global: true
+set col: column9 value: fill(ifmissing($col, null())) order: sourcerownumber()
+
+
+
+
+Loading the exported result olympics1932_a.csv into R, we can see that the data is in the desired format:
+
+
+```{r}
+oly_a <- read.csv("~/Desktop/olympics1932_a.csv")
+oly_a
+```
+
+
+$\textbf{(b)}$
+
+Again, using the data wrangler with the following code yeilds the olyb2 and olyb1 csvs which we then simply merge in R and  effectively append the reulst to itself to get the desired output. Wrangler queries:
+
+
+to get the olyb1 which contains all variables bar "program", and olyb2, which contains all but "performance", for the pairs
+
+
+extract col: column1 at: 15,22
+extract col: column1 at: 24,31
+extract col: column1 at: 33,40
+extract col: column1 at: 42,50
+extract col: column1 at: 51,58
+extract col: column1 at: 60,67
+extract col: column1 after: `  ` before: `{end}`
+extract col: column1 on: `7 |6 |5 |4 |3 |2 |  |1 |pair`
+extract col: column1 on: `Performance|Program|criterion `
+keep row: in(sourcerownumber(), [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35])
+drop col: column1
+replace col: column9 with: '' on: `  ` global: true
+set col: column9 value: fill(ifmissing($col, null())) order: sourcerownumber()
+header
+valuestocols col: criterion value: 1 default: 0
+unpivot col: judge_7, judge_6, judge_5, judge_4, judge_3, judge_2, judge_1
+drop col: criterion
+unpivot col: value1
+drop col: key2
+derive value: Program * value2 as: 'prog'
+derive value: Performance * value2 as: 'perf'
+drop col: Performance,Program
+drop col: value2
+delete row: matches([perf], `0`)
+drop col: prog
+
+
+second chunk, for olyb2 file, effecyively the same but:
+... 
+delete row: matches([prog], `0`)
+drop col: perf
+
+
+
+These are simply combined in R to obtain the output, but for the pairs. To get it for the skaters, we effectively append the reusult to itself to get the desired output. 
+```{r}
+olyb2 <- read.csv("~/Desktop/olympics1932b2.csv")
+olyb1 <- read.csv("~/Desktop/olympics1932b1.csv")
+
+olyb2$performance <- olyb1$perf
+colnames(olyb2)[colnames(olyb2)=="prog"] <- "program"
+
+
+olyb3 <- olyb2
+colnames(olyb3)[colnames(olyb3)=="pair"] <- "skaterID"
+olyb3$skaterID <- olyb3$skaterID + 7
+colnames(olyb2)[colnames(olyb2)=="pair"] <- "skaterID"
+colnames(olyb2)[colnames(olyb2)=="key1"] <- "judgeID"
+colnames(olyb3)[colnames(olyb3)=="key1"] <- "judgeID"
+olyb3 <- olyb3[,c(4,3,1,2)]
+olyb2 <- olyb2[,c(4,3,1,2)]
+oly_b <- rbind(olyb2, olyb3)
+
+write.csv(oly_b, "oly_b.csv", row.names=F)   
+oly_b
+```
+
+
+
+$\textbf{(c)}$
+

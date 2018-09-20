@@ -1,0 +1,194 @@
+---
+title: "hw12"
+author: "Tin Oreskovic, Jade Le-Cascarino"
+date: "2/28/2018"
+output:
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+$\textbf{9.5. (a)}$
+
+```{r}
+beauty.data <- read.csv("~/Desktop/ProfEvaltnsBeautyPublic.csv")
+```
+
+
+```{r}
+library(rstanarm)
+library(arm)
+```
+
+
+```{r}
+lm.6 <- lm (courseevaluation ~ btystdave + female + btystdave*female, data = beauty.data)
+display (lm.6)
+```
+
+
+$\textbf{9.5. (b)}$
+
+```{r}
+bayes.6 <- stan_glm(courseevaluation ~ btystdave + female + btystdave*female, data = beauty.data)
+```
+
+```{r}
+summary(bayes.6)
+```
+These are indeed close. See $\textbf{9.5. (d)} for commentary depending on the number of simulations (various values for iter).
+$\textbf{9.5. (c)}$
+
+```{r}
+bayes.6a <- stan_glm(courseevaluation ~ btystdave + female + btystdave*female, data = beauty.data, iter=1000)
+```
+
+```{r}
+summary(bayes.6a)
+```
+
+
+
+```{r}
+bayes.6b <- stan_glm(courseevaluation ~ btystdave + female + btystdave*female, data = beauty.data, iter=100)
+```
+
+```{r}
+summary(bayes.6b)
+```
+
+
+```{r}
+bayes.6c <- stan_glm(courseevaluation ~ btystdave + female + btystdave*female, data = beauty.data, iter=10)
+```
+
+```{r}
+summary(bayes.6c)
+```
+
+$\textbf{9.5. (c)}$
+
+With only 10 simulations, the estimates are very off. Doing 100 and 1000 simulations yielded good approximations to the mean and standard error for the coefficient of beauty. Repeating each a few times confirms this.
+
+$\textit{Shadow topic:}$
+
+I hope to learn more about how to appropriately choose informative priors. It seems that in certain cases where there are known physical or rigid societal constraints epistemically available to the "statistician," the choices can be more or less straightforward. The confusing bit, to me, is whether in a domain where there is a relative lack of previous data and research on the hypothesis/question, one should still relly, say, on popular narratives concerning the causal mechanism to be estimated or remain "agnostic" and thus leave (comparatively) more of a chance for the results to surprise. A related question is whether remaining agnostic is really a possibility, or does not specifying a prior distribution really amounts to implicitly accepting a certian type of distribution: this one, I assume, is easier to answer, and I'll look back at the text (and other sources).
+
+
+
+
+$\textbf{10.1. (a)}$
+
+```{r}
+#install.packages("metRology")
+library(metRology)
+x1 <- (1:100)
+x2 <- rbinom(100,1,0.5)
+fake <- data.frame(x1, x2)
+e <- rt.scaled(100, 4, mean = 0, sd = 5) 
+fake$y <- 3 + 0.1*x1 + 0.5*x2 + e
+
+fit <- lm (y ~ x1 + x2, data=fake)
+display(fit)
+```
+```{r}
+'the .68 confidence intervals for the intercept coefficient cover the true value'
+print((3 - coef(fit)["(Intercept)"])^2 < (se.coef(fit)["(Intercept)"])^2)
+
+'the .68 confidence intervals for the x1 coefficient cover the true value:'
+print((0.1 - coef(fit)[2])^2 < (se.coef(fit)[2])^2)  
+
+'the .68 confidence intervals for the x2 coefficient cover the true value:' 
+print((0.5 - coef(fit)[3])^2 < (se.coef(fit)[3])^2)  
+```
+
+
+
+
+
+
+
+
+
+
+
+
+$\textbf{Part 10.1. (b)}$
+```{r}
+n_sims <- 1000
+
+a_int <- rep(NA, n_sims)
+b1_int <- rep(NA, n_sims)
+b2_int <- rep(NA, n_sims)
+
+#the following are used in the shadow topic:
+a_se <- rep(NA, n_sims)
+b1_se <- rep(NA, n_sims)
+b2_se <- rep(NA, n_sims)
+a_sig <- rep(NA, n_sims)
+b1_sig <- rep(NA, n_sims)
+b2_sig <- rep(NA, n_sims)
+a_cf <- rep(NA, n_sims)
+b1_cf <- rep(NA, n_sims)
+b2_cf <- rep(NA, n_sims)
+
+for(i in 1:n_sims){
+  x_1 <- (1:100)
+  x_2 <- rbinom(100,1,0.5)
+  err <- rt.scaled(100, 4, mean = 0, sd = 5)
+  y_2 = 3 + 0.1*x_1 + 0.5*x_2 + err
+  fit2 <- lm(y_2 ~ x_1 + x_2)
+  a_int[i] <- (3 - coef(fit2)["(Intercept)"])^2 < (se.coef(fit2)["(Intercept)"])^2 
+  b1_int[i] <- (0.1 - coef(fit2)[2])^2 < (se.coef(fit2)[2])^2   
+  b2_int[i] <- (0.5 - coef(fit2)[3])^2 < (se.coef(fit2)[3])^2  
+  
+  #for the shadow:
+  a_cf[i] <- coef(fit2)["(Intercept)"]
+  b1_cf[i] <- coef(fit2)[2]
+  b2_cf[i] <- coef(fit2)[3]
+  
+  a_se[i] <- se.coef(fit2)["(Intercept)"]
+  b1_se[i] <- se.coef(fit2)[2]
+  b2_se[i] <- se.coef(fit2)[3]
+  a_sig[i] <- a_cf[i] - 2*a_se[i]
+  b1_sig[i] <- b1_cf[i] - 2*b1_se[i]
+  b2_sig[i] <- b2_cf[i] - 2*b2_se[i]
+}
+
+
+'the percentage of .68 confidence intervals that cover the true values, for the coefficients for the intercept, x1, and x2:'
+sum(a_int)/n_sims   
+sum(b1_int)/n_sims
+sum(b2_int)/n_sims
+```
+
+
+$\textit{Shadow topic:}$
+The idea here was to get the fraction of the simulations for which the estimates of $\alpha$, $\beta_1$ and $\beta_2$, respectively, are statistically significant at the 5% level, and to make plots that would show how many of the estimates are "close" or "far" from significance, by making histograms of the difference of each estimate and the corresponding standard error multiplied by 2:
+
+$\left(\hat{\beta_i} - 2\times(\sigma_{\beta_i})\right) \rightarrow \hat{\beta_i}$ is siginificant.
+
+```{r}
+library(ggplot2)
+fake3 <- data.frame(a_cf, b1_cf, b2_cf, a_se, b1_se, b2_se, a_sig, b1_sig, b2_sig)
+
+sum(a_sig > 0)/1000
+sum(b1_sig > 0)/1000
+sum(b2_sig > 0)/1000
+ggplot(fake3, aes(a_sig)) + geom_histogram(bins=60, colour = "black", fill = "white") + theme_light() + geom_vline(xintercept = 0) + xlab("alpha - 2*s.e")
+ggplot(fake3, aes(b1_sig)) + geom_histogram(bins=60, colour = "black", fill = "white") + theme_light() + geom_vline(xintercept = 0) + xlab("beta_hat_1 - 2*s.e")
+ggplot(fake3, aes(b2_sig)) + geom_histogram(bins=60, colour = "black", fill = "white") + theme_light() + geom_vline(xintercept = 0) + xlab("beta_hat_2 - 2*s.e")
+```
+
+
+
+
+
+
+

@@ -1,0 +1,210 @@
+---
+title: "Hw8"
+author: "Jade Le-Cascarino, Tin Oreskovic"
+date: "2/13/2018"
+output:
+  pdf_document: 
+    fig_caption: true
+    keep_tex: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$\textbf{Part (a)}$
+
+$\hat{\theta}_{prior} = 0.42\\$ 
+$\hat{\theta}_{survey} = 0.54\\$ 
+$\sigma_{prior} = 0.05\\$ 
+
+
+$$\sigma_{data}^2 \times \hat{\theta}_{prior} + \frac{\sigma_{prior}^2 \times (\hat{\theta}_{survey})}{0.05^2} + \sigma_{data}^2$$
+
+
+$$\sigma_{data}^2 = 0.00125$$
+
+
+
+Given the formula:
+
+$$\sqrt{\frac{1\cdot\left(1-p\right)}{n}}$$
+$$ n \approx 199$$
+
+The sample size has to be 199 so that the candidate has a $50\%$ chance of winning the election. 
+
+$\textbf{Part (b)}$
+
+```{r}
+
+theta_hat_prior = 0.42
+theta_hat_survey = 0.54
+se_prior = 0.05
+
+n = 199
+
+y = theta_hat_survey * n 
+
+se_data = sqrt((y/n) * (1-y/n)/n)
+
+theta_hat_bayes = (theta_hat_prior/se_prior^2 + theta_hat_survey/se_data^2) /
+  (1/se_prior^2 + 1/se_data^2)
+
+se_bayes = sqrt(1/(1/se_prior^2 + 1/se_data^2))
+
+print(c("Posterior mean: ", theta_hat_bayes))
+print(c("Posterior standard deviation: ", se_bayes))
+```
+
+$\textit{Shadow Topic:}$
+The following simulation will show how the posterior mean varies with the full range of values:
+$$\hat{\theta}_{prior} \in [0, 1]\hphantom{sa} \wedge \hphantom{as}
+\hat{\theta}_{survey} \in \left[0, 1\right]\\$$
+
+
+For  $$n = 10, n = 199, n = 10000$$
+
+
+That is, a simulation of what a bayesian decision maker might infer from a survey of $10$ of their acquaintances, from a modest survey, and from a larger survey. The three sets of three plots each (two contour plots and the 3-D surface for each value of $n$) illustrate how the effect of prior information on the posterior mean progressively diminishes as $n$ increases. 
+
+```{r}
+
+for (n in c(10,199,10000)){
+  
+theta_hat_prior = seq(0, 1, .01)
+theta_hat_survey = seq(0, 1, .01)
+se_prior = 0.05
+
+m <- length(theta_hat_prior)
+k <- length(theta_hat_survey)
+
+
+theta_hat_prior = 0.42
+theta_hat_survey = 0.54
+se_prior = 0.05
+
+n = 199
+
+y = theta_hat_survey * n 
+
+se_data = sqrt((y/n) * (1-y/n)/n)
+
+theta_hat_bayes = (theta_hat_prior/se_prior^2 + theta_hat_survey/se_data^2) /
+  (1/se_prior^2 + 1/se_data^2)
+
+se_bayes = sqrt(1/(1/se_prior^2 + 1/se_data^2))
+
+print(c("Posterior mean: ", theta_hat_bayes))
+print(c("Posterior standard deviation: ", se_bayes))
+```
+
+$\textit{Shadow Topic:}$
+The following simulation will show how the posterior mean varies with the full range of values:
+$$\hat{\theta}_{prior} \in [0, 1]\hphantom{sa} \wedge \hphantom{as}
+\hat{\theta}_{survey} \in \left[0, 1\right]\\$$
+
+
+For  $$n = 10, n = 199, n = 10000$$
+
+
+That is, a simulation of what a bayesian decision maker might infer from a survey of $10$ of their acquaintances, from a modest survey, and from a larger survey. The three sets of three plots each (two contour plots and the 3-D surface for each value of $n$) illustrate how the effect of prior information on the posterior mean progressively diminishes as $n$ increases. 
+
+```{r}
+#install.packages("plotly")
+library(plotly)
+#packageVersion('plotly')
+
+for (n in c(10,199,10000)){
+  
+theta_hat_prior = seq(0, 1, .01)
+theta_hat_survey = seq(0, 1, .01)
+se_prior = 0.05
+
+m <- length(theta_hat_prior)
+k <- length(theta_hat_survey)
+
+
+
+y = theta_hat_survey * n 
+
+se_data = sqrt((y/n) * (1-y/n)/n)
+
+posterior_mean <- function(theta_hat_prior, se_prior, theta_hat_survey, se_data){
+  theta_hat_bayes <- (theta_hat_prior/se_prior^2 + theta_hat_survey/se_data^2) / (1/se_prior^2 + 1/se_data^2)
+  return(theta_hat_bayes)
+}
+
+z <- matrix(0, nrow=m, ncol=k)
+for(i in 1:m)for(j in 1:k)z[i,j] <- posterior_mean(theta_hat_prior[i], se_prior, theta_hat_survey[j], se_data[j])
+
+#the following contour plots best illustrate the above fact
+contour(x = theta_hat_prior, y = theta_hat_survey, z = z, main=paste('posterior when n =', n))
+
+filled.contour(theta_hat_prior, theta_hat_survey, z, color = terrain.colors,
+    plot.title = title(main = paste('posterior when n =', n)), xlab = "a", ylab = "b", plot.axes = { axis(1); axis(2)})
+
+
+y = theta_hat_survey * n 
+
+se_data = sqrt((y/n) * (1-y/n)/n)
+
+posterior_mean <- function(theta_hat_prior, se_prior, theta_hat_survey, se_data){
+  theta_hat_bayes <- (theta_hat_prior/se_prior^2 + theta_hat_survey/se_data^2) / (1/se_prior^2 + 1/se_data^2)
+  return(theta_hat_bayes)
+}
+
+z <- matrix(0, nrow=m, ncol=k)
+for(i in 1:m)for(j in 1:k)z[i,j] <- posterior_mean(theta_hat_prior[i], se_prior, theta_hat_survey[j], se_data[j])
+
+#the following contour plots best illustrate the above fact
+contour(x = theta_hat_prior, y = theta_hat_survey, z = z, main=paste('posterior when n =', n))
+
+filled.contour(theta_hat_prior, theta_hat_survey, z, color = terrain.colors,
+    plot.title = title(main = paste('posterior when n =', n)), xlab = "a", ylab = "b", plot.axes = { axis(1); axis(2)})
+
+
+persp(theta_hat_prior,theta_hat_survey,z,theta=60, phi=20, expand=0.7,
+ col="green", zlab="posterior",
+ ticktype="detailed",
+ shade=.75, lphi=45, ltheta=135, xlab = "theta_prior", ylab = "theta_survey", main=paste('posterior when n =', n))
+    
+
+}
+```
+
+
+```{r}
+n <- 100
+theta_hat_prior = seq(0, 1, .01)
+theta_hat_survey = seq(0, 1, .01)
+se_prior = 0.05
+
+m <- length(theta_hat_prior)
+k <- length(theta_hat_survey)
+
+
+
+y = theta_hat_survey * n 
+
+se_data = sqrt((y/n) * (1-y/n)/n)
+
+posterior_mean <- function(theta_hat_prior, se_prior, theta_hat_survey, se_data){
+  theta_hat_bayes <- (theta_hat_prior/se_prior^2 + theta_hat_survey/se_data^2) / (1/se_prior^2 + 1/se_data^2)
+  return(theta_hat_bayes)
+}
+
+z <- matrix(0, nrow=m, ncol=k)
+for(i in 1:m)for(j in 1:k)z[i,j] <- posterior_mean(theta_hat_prior[i], se_prior, theta_hat_survey[j], se_data[j])
+
+library(plotly)
+
+p <- plot_ly(
+   x = theta_hat_prior, 
+  y = theta_hat_survey, 
+  z = z, 
+  type = "contour" 
+)
+p
+
+```
+

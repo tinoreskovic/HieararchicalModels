@@ -1,0 +1,225 @@
+---
+title: "HW7"
+author: "Jade Le-Cascarino, Tin Oreskovic"
+date: "2/10/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("ggplot2")
+#install.packages("latex2exp")
+#install.packages("plotly")
+#install.packages("rgl")
+#install.packages("gplots")
+#install.packages("Rcpp")
+#install.packages("car")
+``` 
+#7.2
+```{r}
+library(ggplot2)
+library(arm)
+library(latex2exp)
+
+n <- 100
+a <- 1
+b <- -35
+c <- 1
+x <- runif(n, min=0, max=50)
+e <- rnorm(n, 0, 3)
+y <- a + b*x + c*(x^2) + e
+
+dat <- data.frame(xvar = x, yvar = y)
+lm_1 <- lm(y ~ x, data=dat)
+
+display(lm_1)
+lx <- log(x)
+ly <- log(y)
+plot(dat$x, dat$y, main="fitted regression line", xlab="X (uniform[0:50])", ylab="Y = 1 - 35*x + x^2 + e")
+a_hat <- coef(lm_1)[1]
+b_hat <- coef(lm_1)[2]
+abline(a_hat, b_hat)
+x_bar <- mean(dat$x)
+ 
+```
+The best fit here still means one that minimizes the sum of the squares of the differences between the observed values and the estimated values $\sum_{i=1}^{n}\left((a +bx_i + \epsilon_i) - (\hat{a} + \hat{b}x_i)\right)^2$, where the estimated $\hat{y}$ for any given value of $x$ is a linear function of $x$ - i.e., it is linear in terms of the estimated parameters  $\hat{a}$ and coefficient $\hat{b}$. Because the data here are generated to resemble a nonlinear curve, when a simple linear model where a single predictor is used, with no transformations applied to the data, the fit  (the line $\hat{a} + \hat{b}x$) does not seem to be apporpriate, and the only reason a relatively high proprotion of the data ($R^2$) is explained is that the range of $x$ is restricted to be between $0$ and $50$. If the range were larger, this fit would perform considerably worse; the same would be the case, for instance, if, holding other parameters fixed, the $e$ had a larger standard deviation or if the $b$ were more negative.
+
+
+#Shadow topic:
+Repeating the exercise with the same data, but using a linear model with a log-transformed $x$ and $y$. This is still a linear model, as the linear parameters $\hat{a}$ and $\hat{b}$ are kept. Though the generated data are odd, I picked the $a$, $b$, and $c$ such that in this problem, despite the restricted range of $x$, the point about the log-transformation can still be emphatically demonstrated comparing the two fits.
+```{r}
+
+lm_2 <- lm(log(y) ~ log(x), data=dat)
+
+display(lm_2)
+dat$lx <- log(x)
+dat$ly <- log(y)
+plot(dat$lx, dat$ly, main="fitted regression line", xlab="X (uniform[0:50])", ylab="Y = 1 - 35*x + x^2 + e")
+a_hat <- coef(lm_2)[1]
+b_hat <- coef(lm_2)[2]
+abline(a_hat, b_hat)
+x_bar <- mean(dat$x)
+```
+
+
+
+#7.4
+
+
+
+```{r}
+library(arm)
+hibbs <- read.table("http://www.stat.columbia.edu/~gelman/arm/examples/ElectionsEconomy/hibbs.dat", header = TRUE)
+```
+
+```{r}
+
+rss <- function(x, y, a, b){
+  resid <- y - (a + b*x)
+  return(sum(resid^2))
+}
+
+rss(hibbs$growth, hibbs$inc.party.vote, 46.2, 3.1)
+rss(hibbs$growth, hibbs$inc.party.vote, 45, 3.1)
+rss(hibbs$growth, hibbs$inc.party.vote, 47, 3.1)
+rss(hibbs$growth, hibbs$inc.party.vote, 46.2, 2.9)
+rss(hibbs$growth, hibbs$inc.party.vote, 46.2, 3.3)
+
+
+a <- seq(43, 49, .1)
+b <- seq(1, 5., .1)
+m <- length(a)
+n <- length(b)
+z <- matrix(0, nrow=m, ncol=n)
+for(i in 1:m)for(j in 1:n)z[i,j] <- rss(hibbs$growth, hibbs$inc.party.vote, a[i],b[j])
+
+print('minimum:')
+print(min(z))# this show that 198.3301, i.e. the sum of squared residuals, indeed obtains its minimal 
+#value for a = 46.2 and b = 3.1 
+
+
+
+#the following contour plots best illustrate the above fact
+contour(x = a, y = b, z = z)
+
+filled.contour(a, b, z, color = terrain.colors,
+    plot.title = title(main = "Sum of Squared Residuals as a Function of a and b"), xlab = "a", ylab = "b", plot.axes = { axis(1); axis(2); points(46.2, 3.1) })
+```
+
+#Shadow topic:
+A surface plot fails to convey the parameters' value at the minimum of 
+$\sum_{i=1}^{n}\left((a +bx_i + \epsilon_i) - (\hat{a} + \hat{b}x_i)\right)^2$, though the region of the minimum can be assessed. The steepness of the increase in the sum of squared residuals as $a$ and $b$ are further
+from $\hat{a}$ and $\hat{b}$ is more apparent than in the contour plots, but this isn't the purpose of the 
+present exercise. We may well consider a case with several predictors: when there are two indpendent variables, it would still be possible to make a "3D contour plot," but the results may easily be quite ungainly. Beyond the issues present with any 3-d plot such as the one below, a 3-d contour plot would be burdened by a further issue of an absence of of an axis representing the output value of the function (sum of squared residuals) of the three parameters $\hat{a}$, $\hat{b_1}$, and $\hat{b_2}$. This leads me to believe that beyond a single predictor, the best representational device might be expressions of linear algebra.
+```{r}
+persp(a,b,z,theta=36, phi=15, expand=0.7,
+ col="lightblue", zlab="z=f(a,b)",
+ ticktype="detailed",
+ shade=.75, lphi=45, ltheta=135)
+```
+
+#7.7 a) 
+
+```{r}
+library(dplyr)
+hibbs_2 = hibbs %>% 
+  mutate(growth_dummy = ifelse(hibbs$growth > 2, 1, 0))
+
+difference = hibbs_2 %>% 
+  filter(growth_dummy == 1) %>% 
+  summarize(mean(inc.party.vote)) - hibbs_2 %>% 
+  filter(growth_dummy == 0) %>% 
+  summarize(mean(inc.party.vote)) 
+
+difference
+
+sd_y1 = hibbs_2 %>% 
+  filter(growth_dummy == 1) %>% 
+  summarize(sd(inc.party.vote)) 
+sqrt_n1 = sqrt(8)
+
+sd_y0 = hibbs_2 %>% 
+  filter(growth_dummy == 0) %>% 
+  summarize(sd(inc.party.vote)) 
+
+hibbs_2 %>% 
+  filter(growth_dummy == 0) 
+  
+sqrt_n0 = sqrt(8)
+
+se_1  = sd_y1/sqrt_n1
+se_0 = sd_y0/sqrt_n0
+se = sqrt(se_1^2 + se_0^2)
+
+```
+
+b)
+```{r}
+fit = lm(inc.party.vote ~ growth_dummy, data = hibbs_2)
+display(fit)
+```
+```{r}
+summary(fit) #to show the results in a less neat fashion but without rounding, 
+#for the purpose of the question
+```
+
+
+Answer: yes, they are the same:
+5.508 for difference or coef
+2.502 for se. 
+
+#Shadow topic: 
+The above method is appplicable in any circumstance where there's a regression over only one variable. 
+The following codes replicates the same process using another dataset in R. 
+The dataset is called prestige, in the "car" package. It has 102 rows and 6 columns. The following regression 
+will look at the coefficient of levels of x variable "education" over the y variable "prestige."
+
+
+```{r}
+#update.packages(checkBuilt = TRUE)
+Prestige = read.csv("https://raw.githubusercontent.com/vincentarelbundock/Rdatasets/master/csv/car/Prestige.csv", header = TRUE)
+head(Prestige)
+
+newdata = Prestige %>% 
+  mutate(education_dummy = ifelse(education > 11, 1, 0))
+
+fit_prestige = lm(prestige ~ education_dummy, data = newdata) #coef = 25.24 
+summary(fit_prestige) #25.238
+
+newdata %>% 
+  filter(education_dummy == 1) %>% 
+  summarize(mean(prestige)) - newdata %>% 
+  filter(education_dummy == 0) %>% 
+  summarize(mean(prestige)) #25.238
+
+```
+#they are the same: 25.23892
+
+```{r}
+s_y1 = newdata %>% 
+  filter(education_dummy == 1) %>% 
+  summarize(sd(prestige)) 
+
+dim(newdata %>% 
+      filter(education_dummy == 1)) #47 rows
+
+n1 = 47 #n = 47 where education_dummy == 1
+
+s_y0 = newdata %>% 
+  filter(education_dummy == 0) %>% 
+  summarize(sd(prestige)) 
+
+dim(newdata %>% 
+  filter(education_dummy == 0)) #55 rows 
+
+n0 = 55
+
+se_1  = s_y1/sqrt(n1)
+se_0 = s_y0/sqrt(n0)
+se = sqrt(se_1^2 + se_0^2)
+se
+```
+Once again, the se from the regression and from the calculations for education_dummy are the same at 2.329. 
